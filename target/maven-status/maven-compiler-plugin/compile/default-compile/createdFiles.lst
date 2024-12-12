@@ -1,10 +1,4 @@
-server\ConnectionHandler$1.class
-server\Arquivo.class
+br\edu\ifsul\bcc\lpoo\om\trabalho\avaliativo\distributos\real\server\InstanciaProcessamento.class
+br\edu\ifsul\bcc\lpoo\om\trabalho\avaliativo\distributos\real\server\UnidadeComputacional.class
 server\ResourceServer.class
 client\ClienteCalculadora.class
-br\edu\ifsul\bcc\lpoo\om\trabalho\avaliativo\distributos\real\server\UnidadeComputacional.class
-server\ConnectionHandler.class
-server\ConnectionServer.class
-server\Estado.class
-server\FileServerFunctions.class
-server\StatusCode.class
