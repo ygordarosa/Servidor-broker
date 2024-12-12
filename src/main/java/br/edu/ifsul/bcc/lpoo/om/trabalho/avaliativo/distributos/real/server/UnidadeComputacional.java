@@ -99,4 +99,9 @@ public InstanciaProcessamento criarInstancia(String clienteId, double cpuNecessa
     public double getMemoriaTotal() {
         return memoriaTotal;
     }
+
+    public double getCustoOperacional() {
+        return custoOperacional;
+    }
+    
 }

@@ -1,4 +1,4 @@
-package server;
+package br.edu.ifsul.bcc.lpoo.om.trabalho.avaliativo.distributos.real.server;
 
 import br.edu.ifsul.bcc.lpoo.om.trabalho.avaliativo.distributos.real.server.InstanciaProcessamento;
 import br.edu.ifsul.bcc.lpoo.om.trabalho.avaliativo.distributos.real.server.UnidadeComputacional;
@@ -34,7 +34,7 @@ public class ResourceServer {
     }
 
     private void trataProtocolo(Socket socket) throws IOException {
-        try (BufferedReader entrada = new BufferedReader(new InputStreamReader(socket.getInputStream())); PrintWriter saida = new PrintWriter(socket.getOutputStream(), true)) {
+        try ( BufferedReader entrada = new BufferedReader(new InputStreamReader(socket.getInputStream()));  PrintWriter saida = new PrintWriter(socket.getOutputStream(), true)) {
             String linha = entrada.readLine();
             if (linha == null) {
                 return;
@@ -128,23 +128,30 @@ public class ResourceServer {
 
         String user = requisicao.getString("user");
 
+        // Cancela a tarefa de expiração, se existir
         if (expirarInstancias.containsKey(user)) {
             expirarInstancias.get(user).cancel(false);
             expirarInstancias.remove(user);
         }
 
+        // Busca a instância do usuário
         for (UnidadeComputacional unidade : unidades) {
             Optional<InstanciaProcessamento> instanciaOpt = unidade.getInstancias().stream()
                     .filter(i -> i.getClienteId().equals(user))
                     .findFirst();
 
             if (instanciaOpt.isPresent()) {
-                unidade.liberarInstancia(instanciaOpt.get());
+                InstanciaProcessamento instancia = instanciaOpt.get();
+
+                unidade.liberarInstancia(instancia);
+
+                String recibo = gerarRecibo(instanciaOpt.get());
 
                 JSONObject resposta = new JSONObject();
                 resposta.put("status", "sucesso");
-                resposta.put("cpu", instanciaOpt.get().getCpuAlocada());
-                resposta.put("memoria", instanciaOpt.get().getMemoriaAlocada());
+                resposta.put("cpu", instancia.getCpuAlocada());
+                resposta.put("memoria", instancia.getMemoriaAlocada());
+                resposta.put("recibo", recibo); // Inclui o recibo na resposta JSON
 
                 enviaResposta(saida, 200, resposta.toString());
                 return;
@@ -162,13 +169,15 @@ public class ResourceServer {
 
             if (instanciaOpt.isPresent()) {
                 unidade.liberarInstancia(instanciaOpt.get());
+                 String recibo = gerarRecibo(instanciaOpt.get());
                 System.out.println("Instância de " + user + " liberada por expiração.");
+                System.out.println(recibo);
                 return;
             }
         }
     }
 
-    private void verificarStatus(PrintWriter saida) { // Novo método para retornar status das unidades computacionais
+    private void verificarStatus(PrintWriter saida) { 
         JSONObject status = new JSONObject();
         for (UnidadeComputacional unidade : unidades) {
             JSONObject unidadeInfo = new JSONObject();
@@ -208,5 +217,49 @@ public class ResourceServer {
         } catch (IOException e) {
             System.err.println("Erro ao iniciar o servidor: " + e.getMessage());
         }
+    }
+
+    public String gerarRecibo(InstanciaProcessamento instancia) {
+        // Cálculo do tempo de uso (em horas)
+        long tempoDeUsoMillis = System.currentTimeMillis() - instancia.getInicioUso();
+        double tempoDeUsoHoras = tempoDeUsoMillis / 1000.0 / 60 / 60;
+
+        // Obter custos da unidade
+        UnidadeComputacional unidade = instancia.getUnidade();
+        double custoPorTempo = unidade.getCustoOperacional();
+        double custoCPU = 2.00; // Exemplo: custo por núcleo de CPU
+        double custoMemoria = 1.50; // Exemplo: custo por GB de memória
+
+        // Cálculo dos valores
+        double valorTempo = tempoDeUsoHoras * custoPorTempo;
+        double valorCPU = instancia.getCpuAlocada() * custoCPU;
+        double valorMemoria = instancia.getMemoriaAlocada() * custoMemoria;
+        double valorTotal = valorTempo + valorCPU + valorMemoria;
+
+        // Montar o recibo
+        return String.format(
+                "------------------------------------------\n"
+                + "            RECIBO DE USO DE RECURSOS\n"
+                + "------------------------------------------\n\n"
+                + "Usuário:          %s\n"
+                + "Tempo de Uso:     %.2f horas\n"
+                + "Recursos Alocados:\n"
+                + "    - CPU:        %.2f núcleos\n"
+                + "    - Memória:    %.2f GB\n\n"
+                + "Custos:\n"
+                + "    - Custo por Tempo:   R$ %.2f/h\n"
+                + "    - Custo por CPU:     R$ %.2f/núcleo\n"
+                + "    - Custo por Memória: R$ %.2f/GB\n\n"
+                + "Resumo:\n"
+                + "    - Valor pelo Tempo:      R$ %.2f\n"
+                + "    - Valor pelos Recursos:  R$ %.2f\n"
+                + "------------------------------------------\n"
+                + "VALOR TOTAL:       R$ %.2f\n"
+                + "------------------------------------------\n\n"
+                + "Obrigado por utilizar nossos serviços!\n",
+                instancia.getClienteId(), tempoDeUsoHoras, instancia.getCpuAlocada(),
+                instancia.getMemoriaAlocada(), custoPorTempo, custoCPU, custoMemoria,
+                valorTempo, (valorCPU + valorMemoria), valorTotal
+        );
     }
 }

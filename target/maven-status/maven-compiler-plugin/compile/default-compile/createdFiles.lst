@@ -1,4 +1,4 @@
 br\edu\ifsul\bcc\lpoo\om\trabalho\avaliativo\distributos\real\server\InstanciaProcessamento.class
 br\edu\ifsul\bcc\lpoo\om\trabalho\avaliativo\distributos\real\server\UnidadeComputacional.class
-server\ResourceServer.class
+br\edu\ifsul\bcc\lpoo\om\trabalho\avaliativo\distributos\real\server\ResourceServer.class
 client\ClienteCalculadora.class
